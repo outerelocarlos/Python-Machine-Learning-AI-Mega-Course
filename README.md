@@ -1,0 +1,1 @@
+A WIP machine learning exercise following and improving (through Docker and optimization approaches) upon [Tim's machine learning course](https://www.youtube.com/watch?v=WFr2WgN9_xE) and its code.

@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  pythonmachinelearningaimegacourse:
+    image: pythonmachinelearningaimegacourse
+    build:
+      context: .
+      dockerfile: ./Dockerfile
