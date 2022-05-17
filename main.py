@@ -1,15 +1,26 @@
+# data science essentials
 import pandas as pd
 import numpy as np
+
+# sklearn - for machine learning tasks
 import sklearn
-from sklearn import linear_model
-import tensorflow as tf 
+from sklearn import linear_model, preprocessing, datasets, svm
+from sklearn.neighbors import KNeighborsClassifier
+
+# Tensorflow - to build neural networks
+import tensorflow as tf
 from tensorflow import keras
+
+# matplotlib - for the plots
 import matplotlib.pyplot as plt
 from matplotlib import style
+
+# libraries to save/load models to the system
 import pickle
 import os
 
-def linear_test():
+def linear_showcase():
+    # https://archive.ics.uci.edu/ml/datasets/Student+Performance
     # load the data into the workspace
     data = pd.read_csv("data/student-mat.csv", sep=";")
 
@@ -24,49 +35,50 @@ def linear_test():
     # isolate the features
     x = np.array(data.drop("G3", axis=1))
 
-    # store the highest accuracy score in a variable
+    # store the highest accuracy score in a variable to iterate and find the best fitting model
     high_score = 0
 
-    # pickle does not work well with relative paths, so before saving/loading the model a variable is created to store the pickle path
+    # pickle is used to save/load machine learning models, but it does not work well with relative paths
+    # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
     print(here)
 
     # loop to find the best model
+    print("Creating model...")
     for _ in range(50):
         # train-test split (90% training, 10% testing)
-        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size=0.1)
+        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
 
         # create the model
-        print("Creating model...")
-        linear = linear_model.LinearRegression()
+        model = linear_model.LinearRegression()
 
         # fit the data to the model
-        linear.fit(x_train, y_train)
+        model.fit(x_train, y_train)
 
         # evaluate the model's accuracy
-        acc = linear.score(x_test, y_test)
+        acc = model.score(x_test, y_test)
 
         # save the model if the accuracy is higher than the previous highest
         if acc > high_score:
+            high_score = acc
             print("Saving model...")
             with open(os.path.join(here, "models/linear_model.pickle"), "wb") as f:
-                pickle.dump(linear, f)
-            high_score = acc
+                pickle.dump(model, f)
         
 
     # load the best performing model
     print("Loading best performing model...")
     pickle_in = open(os.path.join(here, "models/linear_model.pickle"), "rb")
-    linear = pickle.load(pickle_in)
-    print(f"Accuracy: {linear.score(x_test, y_test)}")
+    model = pickle.load(pickle_in)
+    print(f"Accuracy: {model.score(x_test, y_test)}")
 
     # evaluate the linear model itself
-    print(f"Coefficients: {linear.coef_}")
-    print(f"Intercept: {linear.intercept_}")
-    print(f"Note that there are {len(linear.coef_)} dimensions since there were {len(linear.coef_)} features") 
+    print(f"Coefficients: {model.coef_}")
+    print(f"Intercept: {model.intercept_}")
+    print(f"Note that there are {len(model.coef_)} dimensions since there were {len(model.coef_)} features") 
 
     # evaluate the model's predictions
-    y_hat = linear.predict(x_test)
+    y_hat = model.predict(x_test)
     print("Predictions:")
     for i in range(len(y_hat)):
         print(f"Predicted grade: {round(y_hat[i])}, Actual grade: {y_test[i]}")
@@ -80,8 +92,163 @@ def linear_test():
     plt.show()
     plt.savefig(here + "/imgs/linear_model/scatterplot.png")
 
+def knn_vs_svm_1():
+    # https://archive.ics.uci.edu/ml/datasets/Car+Evaluation
+    # load the data into the workspace
+    column_names = ("buying", "maint", "doors", "persons", "lug_boot", "safety", "class")
+    data = pd.read_csv("data/car.data", names = column_names)
+
+    # preprocessing is required to transform strings to float values
+    # at the same time, features and labels are separated
+    features = {}
+    for i in range(len(column_names)):
+        if i != len(column_names) - 1:
+            features[i] = preprocessing.LabelEncoder().fit_transform(list(data[column_names[i]]))
+        else:
+            y = list(preprocessing.LabelEncoder().fit_transform(list(data[column_names[i]])))
+
+    # features are taken from the dictionary and flattened to use with ML algorithms
+    x = list(zip(features[0], features[1], features[2], features[3], features[4], features[5]))
+
+    # store the highest accuracy score in a variable to iterate and find the best fitting model
+    high_score = 0
+
+    # pickle is used to save/load machine learning models, but it does not work well with relative paths
+    # as such, a variable is created to store the absolute path to where the models are to be saved
+    here = os.path.dirname(os.path.abspath(__file__))
+    print(here)
+
+    # loop to find the best model
+    print("Creating KNN model...")
+    for _ in range(5):
+        # train-test split (90% training, 10% testing)
+        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
+        
+        # optimizing for neighbors
+        for k in range(4):
+            # create the model
+            model = KNeighborsClassifier(n_neighbors = 3*k + 1)
+
+            # fit the data to the model
+            model.fit(x_train, y_train)
+
+            # evaluate the model's accuracy
+            acc = model.score(x_test, y_test)
+
+            # save the model if the accuracy is higher than the previous highest
+            if acc > high_score["knn"]:
+                high_score["knn"] = acc
+                print("Saving model...")
+                with open(os.path.join(here, "models/car_knn_model.pickle"), "wb") as f:
+                    pickle.dump(model, f)
+    
+    print("Creating SVM model...")
+    # loop to find the best model
+    for _ in range(20):
+        # train-test split (90% training, 10% testing)
+        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
+        
+        # optimizing for neighbors
+        for k in range(5):
+            # create the model
+            model = svm.SVC(kernel="linear")
+
+            # fit the data to the model
+            model.fit(x_train, y_train)
+
+            # evaluate the model's accuracy
+            acc = model.score(x_test, y_test)
+
+            # save the model if the accuracy is higher than the previous highest
+            if acc > high_score["svm"]:
+                high_score["svm"] = acc
+                print("Saving model...")
+                with open(os.path.join(here, "models/car_svm_model.pickle"), "wb") as f:
+                    pickle.dump(model, f)   
+
+    # load the best performing model
+    print("Loading best performing models...")
+    pickle_in = open(os.path.join(here, "models/car_knn_model.pickle"), "rb")
+    knn_model = pickle.load(pickle_in)
+    pickle_in = open(os.path.join(here, "models/car_svm_model.pickle"), "rb")
+    svm_model = pickle.load(pickle_in)
+    print(f"KNN Accuracy: {knn_model.score(x_test, y_test)}")
+    print(f"SVM Accuracy: {svm_model.score(x_test, y_test)}")
+
+def knn_vs_svm_2():
+    # load the data into the workspace
+    cancer = datasets.load_breast_cancer()
+    x = cancer.data
+    y = cancer.target
+
+    # store the highest accuracy score in a variable to iterate and find the best fitting model
+    high_score = 0
+
+    # pickle is used to save/load machine learning models, but it does not work well with relative paths
+    # as such, a variable is created to store the absolute path to where the models are to be saved
+    here = os.path.dirname(os.path.abspath(__file__))
+    print(here)
+
+    # loop to find the best model
+    print("Creating KNN model...")
+    for _ in range(5):
+        # train-test split (90% training, 10% testing)
+        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
+        
+        # optimizing for neighbors
+        for k in range(4):
+            # create the model
+            model = KNeighborsClassifier(n_neighbors = 3*k + 1)
+
+            # fit the data to the model
+            model.fit(x_train, y_train)
+
+            # evaluate the model's accuracy
+            acc = model.score(x_test, y_test)
+
+            # save the model if the accuracy is higher than the previous highest
+            if acc > high_score["knn"]:
+                high_score["knn"] = acc
+                print("Saving model...")
+                with open(os.path.join(here, "models/cancer_knn_model.pickle"), "wb") as f:
+                    pickle.dump(model, f)
+
+    # loop to find the best model
+    print("Creating SVM model...")
+    for _ in range(20):
+        # train-test split (90% training, 10% testing)
+        x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
+        
+        # optimizing for neighbors
+        for k in range(5):
+            # create the model
+            model = svm.SVC(kernel="linear")
+
+            # fit the data to the model
+            model.fit(x_train, y_train)
+
+            # evaluate the model's accuracy
+            acc = model.score(x_test, y_test)
+
+            # save the model if the accuracy is higher than the previous highest
+            if acc > high_score["svm"]:
+                high_score["svm"] = acc
+                print("Saving model...")
+                with open(os.path.join(here, "models/cancer_svm_model.pickle"), "wb") as f:
+                    pickle.dump(model, f)
+    
+    # load the best performing model
+    print("Loading best performing models...")
+    pickle_in = open(os.path.join(here, "models/cancer_knn_model.pickle"), "rb")
+    knn_model = pickle.load(pickle_in)
+    pickle_in = open(os.path.join(here, "models/cancer_svm_model.pickle"), "rb")
+    svm_model = pickle.load(pickle_in)
+    print(f"KNN Accuracy: {knn_model.score(x_test, y_test)}")
+    print(f"SVM Accuracy: {svm_model.score(x_test, y_test)}")    
+
 def neural_net():
     # https://keras.io/api/datasets/fashion_mnist/
+    # load the data into the workspace
     data = keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = data.load_data()
     class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
@@ -91,12 +258,14 @@ def neural_net():
     train_images = train_images/255.0
     test_images = test_images/255.0
 
-    # pickle does not work well with relative paths, so before saving/loading the model a variable is created to store the pickle path
+    # store the highest accuracy score in a variable to iterate and find the best fitting model
+    high_score = 0
+
+    # pickle is used to save/load machine learning models, but it does not work well with relative paths
+    # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
     print(here)
 
-    # store the highest accuracy score in a variable
-    high_score = 0
     """
     # loop to find the best model
     for _ in range(3):
@@ -117,10 +286,10 @@ def neural_net():
             loss, acc = model.evaluate(test_images, test_labels)
             # save the model if the accuracy is higher than the previous highest
             if acc > high_score:
+                high_score = acc
                 print("Saving model...")
                 with open(os.path.join(here, "models/neural_net.pickle"), "wb") as f:
-                    pickle.dump(model, f)
-                high_score = acc"""
+                    pickle.dump(model, f)"""
         
     # load the best performing model
     print("Loading best performing model...")
@@ -143,6 +312,9 @@ def neural_net():
         plt.savefig(f"{here}/imgs/neural_net/{i}.png")
 
 def main():
+    # linear_showcase()
+    # knn_vs_svm_1()
+    # knn_vs_svm_2()
     neural_net()
 
 if __name__ == '__main__':
