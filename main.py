@@ -4,8 +4,9 @@ import numpy as np
 
 # sklearn - for machine learning tasks
 import sklearn
-from sklearn import linear_model, preprocessing, datasets, svm
+from sklearn import linear_model, preprocessing, datasets, svm, metrics
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cluster import KMeans
 
 # Tensorflow - to build neural networks
 import tensorflow as tf
@@ -41,7 +42,6 @@ def linear_showcase():
     # pickle is used to save/load machine learning models, but it does not work well with relative paths
     # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
-    print(here)
 
     # loop to find the best model
     print("Creating model...")
@@ -111,12 +111,11 @@ def knn_vs_svm_1():
     x = list(zip(features[0], features[1], features[2], features[3], features[4], features[5]))
 
     # store the highest accuracy score in a variable to iterate and find the best fitting model
-    high_score = 0
+    high_score = {"knn": 0, "svm": 0}
 
     # pickle is used to save/load machine learning models, but it does not work well with relative paths
     # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
-    print(here)
 
     # loop to find the best model
     print("Creating KNN model...")
@@ -182,12 +181,11 @@ def knn_vs_svm_2():
     y = cancer.target
 
     # store the highest accuracy score in a variable to iterate and find the best fitting model
-    high_score = 0
+    high_score = {"knn": 0, "svm": 0}
 
     # pickle is used to save/load machine learning models, but it does not work well with relative paths
     # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
-    print(here)
 
     # loop to find the best model
     print("Creating KNN model...")
@@ -246,6 +244,73 @@ def knn_vs_svm_2():
     print(f"KNN Accuracy: {knn_model.score(x_test, y_test)}")
     print(f"SVM Accuracy: {svm_model.score(x_test, y_test)}")    
 
+def kmeans_showcase():
+    # https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html
+    # load the data into the workspace
+    digits = datasets.load_digits()
+
+    # .data selects all of the features, grayscale values for each pixel ranging from 0 to 255 
+    # data is scaled/regularized (between -1 and 1, although there are no negative values in this case)
+    data = preprocessing.scale(digits.data)
+
+    # .target selects the target labels, 0-9
+    y = digits.target
+
+    # a model evaluation function is created by using different metrics
+    def bench(estimators, data):
+        titles = ["Inertia",
+            "Homogeneity",
+            "Completeness",
+            "V-measure",
+            "Adjusted Rand-Index",
+            "Adjusted Mutual Information",
+            "Silhouette Coefficient"]
+        output = {"Metrics": titles}
+
+        def single_bench(estimator, data, output):
+            estimator.fit(data)
+            results = [estimator.inertia_,
+            metrics.homogeneity_score(y, estimator.labels_),
+            metrics.completeness_score(y, estimator.labels_),
+            metrics.v_measure_score(y, estimator.labels_),
+            metrics.adjusted_rand_score(y, estimator.labels_),
+            metrics.adjusted_mutual_info_score(y, estimator.labels_),
+            metrics.silhouette_score(data, estimator.labels_, metric='euclidean')]
+
+            output[name] = results
+
+            """
+            print('%-9s\t%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'
+                % (name,
+                estimator.inertia_,
+                metrics.homogeneity_score(y, estimator.labels_),
+                metrics.completeness_score(y, estimator.labels_),
+                metrics.v_measure_score(y, estimator.labels_),
+                metrics.adjusted_rand_score(y, estimator.labels_),
+                metrics.adjusted_mutual_info_score(y, estimator.labels_),
+                metrics.silhouette_score(data, estimator.labels_, metric = 'euclidean')))
+            """
+
+        # the function works with a single estimator/algorithm but it can also be used with a list of them
+        if type(estimators) != type([]):
+            estimator = estimators
+            name = f"{estimators}"
+            single_bench(estimator, data, output)
+        else: 
+            for estimator in estimators:
+                name = f"{estimator}"
+                single_bench(estimator, data, output)
+        
+        output = pd.DataFrame.from_dict(output)
+        print(output)
+
+    # Various clusters are compared using the custom bench function
+    clf_1 = KMeans(n_clusters = 5, init = "random")
+    clf_2 = KMeans(n_clusters = 10, init = "random")
+    clf_3 = KMeans(n_clusters = 15, init = "random")
+    clf_4 = KMeans(n_clusters = 20, init = "random")
+    bench([clf_1, clf_2, clf_3, clf_4], data)
+
 def neural_net():
     # https://keras.io/api/datasets/fashion_mnist/
     # load the data into the workspace
@@ -264,7 +329,6 @@ def neural_net():
     # pickle is used to save/load machine learning models, but it does not work well with relative paths
     # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
-    print(here)
 
     """
     # loop to find the best model
@@ -312,9 +376,10 @@ def neural_net():
         plt.savefig(f"{here}/imgs/neural_net/{i}.png")
 
 def main():
-    # linear_showcase()
-    # knn_vs_svm_1()
-    # knn_vs_svm_2()
+    linear_showcase()
+    knn_vs_svm_1()
+    knn_vs_svm_2()
+    kmeans_showcase()
     neural_net()
 
 if __name__ == '__main__':
