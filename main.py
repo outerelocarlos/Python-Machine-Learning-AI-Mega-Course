@@ -20,7 +20,7 @@ from matplotlib import style
 import pickle
 import os
 
-def linear_showcase():
+def linear_showcase(do_plot = False):
     # https://archive.ics.uci.edu/ml/datasets/Student+Performance
     # load the data into the workspace
     data = pd.read_csv("data/student-mat.csv", sep=";")
@@ -61,7 +61,7 @@ def linear_showcase():
         # save the model if the accuracy is higher than the previous highest
         if acc > high_score:
             high_score = acc
-            print("Saving model...")
+            print(f"Saving model with accuracy = {acc}")
             with open(os.path.join(here, "models/linear_model.pickle"), "wb") as f:
                 pickle.dump(model, f)
         
@@ -89,8 +89,9 @@ def linear_showcase():
     plt.scatter(data[x_label], data["G3"])
     plt.xlabel(x_label)
     plt.ylabel("Final Grade")
-    plt.show()
     plt.savefig(here + "/imgs/linear_model/scatterplot.png")
+    if do_plot == True:
+        plt.show()
 
 def knn_vs_svm_1():
     # https://archive.ics.uci.edu/ml/datasets/Car+Evaluation
@@ -137,7 +138,7 @@ def knn_vs_svm_1():
             # save the model if the accuracy is higher than the previous highest
             if acc > high_score["knn"]:
                 high_score["knn"] = acc
-                print("Saving model...")
+                print(f"Saving model with accuracy = {acc}")
                 with open(os.path.join(here, "models/car_knn_model.pickle"), "wb") as f:
                     pickle.dump(model, f)
     
@@ -147,23 +148,21 @@ def knn_vs_svm_1():
         # train-test split (90% training, 10% testing)
         x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
         
-        # optimizing for neighbors
-        for k in range(5):
-            # create the model
-            model = svm.SVC(kernel="linear")
+        # create the model
+        model = svm.SVC(kernel="linear")
 
-            # fit the data to the model
-            model.fit(x_train, y_train)
+        # fit the data to the model
+        model.fit(x_train, y_train)
 
-            # evaluate the model's accuracy
-            acc = model.score(x_test, y_test)
+        # evaluate the model's accuracy
+        acc = model.score(x_test, y_test)
 
-            # save the model if the accuracy is higher than the previous highest
-            if acc > high_score["svm"]:
-                high_score["svm"] = acc
-                print("Saving model...")
-                with open(os.path.join(here, "models/car_svm_model.pickle"), "wb") as f:
-                    pickle.dump(model, f)   
+        # save the model if the accuracy is higher than the previous highest
+        if acc > high_score["svm"]:
+            high_score["svm"] = acc
+            print(f"Saving model with accuracy = {acc}")
+            with open(os.path.join(here, "models/car_svm_model.pickle"), "wb") as f:
+                pickle.dump(model, f)   
 
     # load the best performing model
     print("Loading best performing models...")
@@ -171,6 +170,8 @@ def knn_vs_svm_1():
     knn_model = pickle.load(pickle_in)
     pickle_in = open(os.path.join(here, "models/car_svm_model.pickle"), "rb")
     svm_model = pickle.load(pickle_in)
+
+    # Showcasing the best performing models' accuracy/performance metrics
     print(f"KNN Accuracy: {knn_model.score(x_test, y_test)}")
     print(f"SVM Accuracy: {svm_model.score(x_test, y_test)}")
 
@@ -207,7 +208,7 @@ def knn_vs_svm_2():
             # save the model if the accuracy is higher than the previous highest
             if acc > high_score["knn"]:
                 high_score["knn"] = acc
-                print("Saving model...")
+                print(f"Saving model with accuracy = {acc}")
                 with open(os.path.join(here, "models/cancer_knn_model.pickle"), "wb") as f:
                     pickle.dump(model, f)
 
@@ -217,23 +218,21 @@ def knn_vs_svm_2():
         # train-test split (90% training, 10% testing)
         x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(x, y, test_size = 0.1)
         
-        # optimizing for neighbors
-        for k in range(5):
-            # create the model
-            model = svm.SVC(kernel="linear")
+        # create the model
+        model = svm.SVC(kernel="linear")
 
-            # fit the data to the model
-            model.fit(x_train, y_train)
+        # fit the data to the model
+        model.fit(x_train, y_train)
 
-            # evaluate the model's accuracy
-            acc = model.score(x_test, y_test)
+        # evaluate the model's accuracy
+        acc = model.score(x_test, y_test)
 
-            # save the model if the accuracy is higher than the previous highest
-            if acc > high_score["svm"]:
-                high_score["svm"] = acc
-                print("Saving model...")
-                with open(os.path.join(here, "models/cancer_svm_model.pickle"), "wb") as f:
-                    pickle.dump(model, f)
+        # save the model if the accuracy is higher than the previous highest
+        if acc > high_score["svm"]:
+            high_score["svm"] = acc
+            print(f"Saving model with accuracy = {acc}")
+            with open(os.path.join(here, "models/cancer_svm_model.pickle"), "wb") as f:
+                pickle.dump(model, f)
     
     # load the best performing model
     print("Loading best performing models...")
@@ -311,7 +310,7 @@ def kmeans_showcase():
     clf_4 = KMeans(n_clusters = 20, init = "random")
     bench([clf_1, clf_2, clf_3, clf_4], data, y)
 
-def neural_net():
+def neural_net(do_plot = False):
     # https://keras.io/api/datasets/fashion_mnist/
     # load the data into the workspace
     data = keras.datasets.fashion_mnist
@@ -350,14 +349,24 @@ def neural_net():
             # save the model if the accuracy is higher than the previous highest
             if acc > high_score:
                 high_score = acc
-                print("Saving model...")
+                print(f"Saving model with accuracy = {acc}")
+
+                # Pickle does not work that well with tensorflow/keras, which has its own function to save/load models
+                """
                 with open(os.path.join(here, "models/neural_net.pickle"), "wb") as f:
                     pickle.dump(model, f)
-        
+                """
+                model.save(os.path.join(here, "models/neural_net.h5"))
+     
     # load the best performing model
     print("Loading best performing model...")
+
+    # Pickle does not work that well with tensorflow/keras, which has its own function to save/load models
+    """   
     pickle_in = open(os.path.join(here, "models/neural_net.pickle"), "rb")
     model = pickle.load(pickle_in)
+    """
+    model = keras.models.load_model(os.path.join(here, "models/neural_net.h5"))
     loss, acc = model.evaluate(test_images, test_labels)
 
     # y_hat (predictions) are stored within a variable to then evaluate against real values/labels
@@ -371,8 +380,9 @@ def neural_net():
         plt.imshow(test_images[i], cmap=plt.cm.binary)
         plt.xlabel(class_names[test_labels[i]])
         plt.title(class_names[np.argmax(predictions[i])])
-        plt.show()
         plt.savefig(f"{here}/imgs/neural_net/{i}.png")
+        if do_plot == True:
+            plt.show()
 
 def main():
     linear_showcase()
