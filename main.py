@@ -244,6 +244,54 @@ def knn_vs_svm_2():
     print(f"KNN Accuracy: {knn_model.score(x_test, y_test)}")
     print(f"SVM Accuracy: {svm_model.score(x_test, y_test)}")    
 
+# a model evaluation function is created by using different metrics
+def bench(estimators, features, y):
+    titles = ["Inertia",
+        "Homogeneity",
+        "Completeness",
+        "V-measure",
+        "Adjusted Rand-Index",
+        "Adjusted Mutual Information",
+        "Silhouette Coefficient"]
+    output = {"Metrics": titles}
+
+    def single_bench(estimator, features, output):
+        estimator.fit(features)
+        results = [estimator.inertia_,
+        metrics.homogeneity_score(y, estimator.labels_),
+        metrics.completeness_score(y, estimator.labels_),
+        metrics.v_measure_score(y, estimator.labels_),
+        metrics.adjusted_rand_score(y, estimator.labels_),
+        metrics.adjusted_mutual_info_score(y, estimator.labels_),
+        metrics.silhouette_score(features, estimator.labels_, metric='euclidean')]
+
+        output[name] = results
+
+        """
+        print('%-9s\t%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'
+            % (name,
+            estimator.inertia_,
+            metrics.homogeneity_score(y, estimator.labels_),
+            metrics.completeness_score(y, estimator.labels_),
+            metrics.v_measure_score(y, estimator.labels_),
+            metrics.adjusted_rand_score(y, estimator.labels_),
+            metrics.adjusted_mutual_info_score(y, estimator.labels_),
+            metrics.silhouette_score(features, estimator.labels_, metric = 'euclidean')))
+        """
+
+    # the function works with a single estimator/algorithm but it can also be used with a list of them
+    if type(estimators) != type([]):
+        estimator = estimators
+        name = f"{estimators}"
+        single_bench(estimator, features, output)
+    else: 
+        for estimator in estimators:
+            name = f"{estimator}"
+            single_bench(estimator, features, output)
+    
+    output = pd.DataFrame.from_dict(output)
+    print(output)
+
 def kmeans_showcase():
     # https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html
     # load the data into the workspace
@@ -256,60 +304,12 @@ def kmeans_showcase():
     # .target selects the target labels, 0-9
     y = digits.target
 
-    # a model evaluation function is created by using different metrics
-    def bench(estimators, data):
-        titles = ["Inertia",
-            "Homogeneity",
-            "Completeness",
-            "V-measure",
-            "Adjusted Rand-Index",
-            "Adjusted Mutual Information",
-            "Silhouette Coefficient"]
-        output = {"Metrics": titles}
-
-        def single_bench(estimator, data, output):
-            estimator.fit(data)
-            results = [estimator.inertia_,
-            metrics.homogeneity_score(y, estimator.labels_),
-            metrics.completeness_score(y, estimator.labels_),
-            metrics.v_measure_score(y, estimator.labels_),
-            metrics.adjusted_rand_score(y, estimator.labels_),
-            metrics.adjusted_mutual_info_score(y, estimator.labels_),
-            metrics.silhouette_score(data, estimator.labels_, metric='euclidean')]
-
-            output[name] = results
-
-            """
-            print('%-9s\t%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'
-                % (name,
-                estimator.inertia_,
-                metrics.homogeneity_score(y, estimator.labels_),
-                metrics.completeness_score(y, estimator.labels_),
-                metrics.v_measure_score(y, estimator.labels_),
-                metrics.adjusted_rand_score(y, estimator.labels_),
-                metrics.adjusted_mutual_info_score(y, estimator.labels_),
-                metrics.silhouette_score(data, estimator.labels_, metric = 'euclidean')))
-            """
-
-        # the function works with a single estimator/algorithm but it can also be used with a list of them
-        if type(estimators) != type([]):
-            estimator = estimators
-            name = f"{estimators}"
-            single_bench(estimator, data, output)
-        else: 
-            for estimator in estimators:
-                name = f"{estimator}"
-                single_bench(estimator, data, output)
-        
-        output = pd.DataFrame.from_dict(output)
-        print(output)
-
     # Various clusters are compared using the custom bench function
     clf_1 = KMeans(n_clusters = 5, init = "random")
     clf_2 = KMeans(n_clusters = 10, init = "random")
     clf_3 = KMeans(n_clusters = 15, init = "random")
     clf_4 = KMeans(n_clusters = 20, init = "random")
-    bench([clf_1, clf_2, clf_3, clf_4], data)
+    bench([clf_1, clf_2, clf_3, clf_4], data, y)
 
 def neural_net():
     # https://keras.io/api/datasets/fashion_mnist/
@@ -330,7 +330,6 @@ def neural_net():
     # as such, a variable is created to store the absolute path to where the models are to be saved
     here = os.path.dirname(os.path.abspath(__file__))
 
-    """
     # loop to find the best model
     for _ in range(3):
         # the model is a sequence of layers
@@ -353,7 +352,7 @@ def neural_net():
                 high_score = acc
                 print("Saving model...")
                 with open(os.path.join(here, "models/neural_net.pickle"), "wb") as f:
-                    pickle.dump(model, f)"""
+                    pickle.dump(model, f)
         
     # load the best performing model
     print("Loading best performing model...")
